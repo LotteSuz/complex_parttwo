@@ -6,18 +6,49 @@ Fence:Boundarary
 """
 from mesa import Agent
 import numpy as np
+import random
 
-# ---> This is a bit messy here, but needed to calculate bound_vals 
+# ---> This is a bit messy here, but needed to calculate bound_vals
 # for list of boundary coordinates, wasn't sure where else to put it
 WIDTH = 25
 HEIGHT = 25
+MIDDLE = int(WIDTH/2)
 bound_vals=[]
 neigh_bound=[]
-
+passage_to_right=[]
+passage_to_left=[]
 
 for i in range(WIDTH):
     for j in range(HEIGHT):
-        if (i == 1 or i == WIDTH - 2) or (j == 1 or j == HEIGHT-2):
+        if i == 0 or i == WIDTH - 1 or i == MIDDLE - 1 or i == MIDDLE + 1:
+            bound_vals.append((i,j))
+        elif j == 0 and i != MIDDLE:
+            bound_vals.append((i,j))
+        elif j == HEIGHT - 1 and i != MIDDLE:
+            bound_vals.append((i,j))
+
+# left chamber
+for i in range(1,MIDDLE-1):
+    for j in range(1,HEIGHT-1):
+        if i == 1:
+            neigh_bound.append((i,j))
+        elif i == MIDDLE-1:
+            passage_to_right.append((i,j))
+        elif j == 1:
+            neigh_bound.append((i,j))
+        elif j == HEIGHT-1:
+            neigh_bound.append((i,j))
+
+# right chamber
+for i in range(MIDDLE+1,WIDTH):
+    for j in range(1,HEIGHT-1):
+        if i == WIDTH:
+            neigh_bound.append((i,j))
+        elif i == MIDDLE+1:
+            passage_to_left.append((i,j))
+        elif j == 1:
+            neigh_bound.append((i,j))
+        elif j == HEIGHT-1:
             neigh_bound.append((i,j))
 
 class Ant(Agent):
@@ -30,22 +61,22 @@ class Ant(Agent):
 
         ##check the neighbor if it is Ant or fence
 
-        # Calculate the force in x and y direction 
+        # Calculate the force in x and y direction
 
         Fx = 0
 
-        if (type(self.model.grid[self.pos[0]-1][self.pos[1]]) is Ant or 
+        if (type(self.model.grid[self.pos[0]-1][self.pos[1]]) is Ant or
             type(self.model.grid[self.pos[0]-1][self.pos[1]]) is Fence):
             Fx += 1
-        if (type(self.model.grid[self.pos[0]+1][self.pos[1]]) is Ant or 
+        if (type(self.model.grid[self.pos[0]+1][self.pos[1]]) is Ant or
             type(self.model.grid[self.pos[0]+1][self.pos[1]]) is Fence):
             Fx -= 1
 
-        Fy = 0 
-        if (type(self.model.grid[self.pos[0]][self.pos[1]-1]) is Ant or 
+        Fy = 0
+        if (type(self.model.grid[self.pos[0]][self.pos[1]-1]) is Ant or
             type(self.model.grid[self.pos[0]][self.pos[1]-1]) is Fence):
             Fy += 1
-        if (type(self.model.grid[self.pos[0]][self.pos[1]+1]) is Ant or 
+        if (type(self.model.grid[self.pos[0]][self.pos[1]+1]) is Ant or
             type(self.model.grid[self.pos[0]][self.pos[1]+1]) is Fence):
             Fy -= 1
 
@@ -62,7 +93,7 @@ class Ant(Agent):
             for y in [-1,0,1]:
                 # Skip the centre and the preferered direction c
                 if (x!=0 or y !=0):
- 
+
                     if self.model.grid.is_cell_empty((self.pos[0] + x,self.pos[1] + y)) == True:
                         trials.append((x,y))
         w = []
@@ -91,7 +122,6 @@ class Ant(Agent):
         return n
 
     def move(self):
-
         Fx, Fy, F = self.force_calc()
 
         if F != 0:
@@ -106,6 +136,18 @@ class Ant(Agent):
             if new_position in neigh_bound:
                 self.model.grid.remove_agent(self)
                 self.model.schedule.remove(self)
+
+            # move to right chamber
+            elif new_position in passage_to_right:
+                pos = random.choice(passage_to_left)
+                new_pos = (pos[0]+1,y)
+                self.model.grid.move_agent(self, new_pos)
+
+            # move to left chamber
+            elif new_position in passage_to_left:
+                pos = random.choice(passage_to_right)
+                new_pos = (pos[0]+1,y)
+                self.model.grid.move_agent(self, new_pos)
 
             ## if it is empty then move into this place
             elif self.model.grid.is_cell_empty(new_position):
@@ -133,4 +175,3 @@ class Brood(Agent):
 class Fence(Agent):
     def __init__(self, id, model):
         super().__init__(id, model)
-

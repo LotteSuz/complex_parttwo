@@ -14,6 +14,7 @@ import numpy as np
 
 WIDTH = 25
 HEIGHT = 25
+MIDDLE = int(WIDTH/2)
 
 
 class Anthill(Model):
@@ -35,12 +36,49 @@ class Anthill(Model):
         self.bound_vals = []
         self.neigh_bound = []
         self.datacollector.collect(self)
+        self.passage_to_right = []
+        self.passage_to_left = []
+
+        # for i in range(WIDTH):
+        #     for j in range(HEIGHT):
+        #         if i == 0 or j == 0 or i == WIDTH-1 or j == HEIGHT-1:
+        #             self.bound_vals.append((i,j))
+        #         if i == 1 or i == WIDTH - 2 or j == 1 or j == HEIGHT-2:
+        #             self.neigh_bound.append((i,j))
 
         for i in range(WIDTH):
             for j in range(HEIGHT):
-                if i == 0 or j == 0 or i == WIDTH-1 or j == HEIGHT-1:
+                if i == 0 or i == WIDTH - 1 or i == MIDDLE - 1 or i == MIDDLE + 1:
                     self.bound_vals.append((i,j))
-                if i == 1 or i == WIDTH - 2 or j == 1 or j == HEIGHT-2:
+                elif j == 0 and i != MIDDLE:
+                    self.bound_vals.append((i,j))
+                elif j == HEIGHT - 1 and i != MIDDLE:
+                    self.bound_vals.append((i,j))
+                # if:
+                #     self.neigh_bound.append((i,j))
+
+        # left chamber
+        for i in range(1,MIDDLE-1):
+            for j in range(1,HEIGHT-1):
+                if i == 1:
+                    self.neigh_bound.append((i,j))
+                elif i == MIDDLE-1:
+                    self.passage_to_right.append((i,j))
+                elif j == 1:
+                    self.neigh_bound.append((i,j))
+                elif j == HEIGHT-1:
+                    self.neigh_bound.append((i,j))
+
+        # right chamber
+        for i in range(MIDDLE+1,WIDTH):
+            for j in range(1,HEIGHT-1):
+                if i == WIDTH:
+                    self.neigh_bound.append((i,j))
+                elif i == MIDDLE+1:
+                    self.passage_to_left.append((i,j))
+                elif j == 1:
+                    self.neigh_bound.append((i,j))
+                elif j == HEIGHT-1:
                     self.neigh_bound.append((i,j))
 
         # Make a Fence boundary
@@ -124,18 +162,3 @@ class Anthill(Model):
         self.sigmastar = np.sqrt(self.sigma)/self.mean_tau_ant
 
         return self.sigmastar
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -35,6 +35,7 @@ class Anthill(Model):
         # List containing all coordinates of the boundary, initial ants location and brood location
         self.bound_vals = []
         self.neigh_bound = []
+        self.middle=[]
         self.datacollector.collect(self)
         self.passage_to_right = []
         self.passage_to_left = []
@@ -45,41 +46,39 @@ class Anthill(Model):
         #             self.bound_vals.append((i,j))
         #         if i == 1 or i == WIDTH - 2 or j == 1 or j == HEIGHT-2:
         #             self.neigh_bound.append((i,j))
+        ##
 
         for i in range(WIDTH):
             for j in range(HEIGHT):
-                if i == 0 or i == WIDTH - 1 or i == MIDDLE - 1 or i == MIDDLE + 1:
+                ##make boundary
+                if i == 0 or j == 0 or i == WIDTH - 1 or j == HEIGHT - 1:
                     self.bound_vals.append((i,j))
-                elif j == 0 and i != MIDDLE:
+                if i == MIDDLE and 0<j<WIDTH - 1:
                     self.bound_vals.append((i,j))
-                elif j == HEIGHT - 1 and i != MIDDLE:
-                    self.bound_vals.append((i,j))
-                # if:
-                #     self.neigh_bound.append((i,j))
+                    self.middle.append((i,j))
 
-        # left chamber
-        for i in range(1,MIDDLE-1):
-            for j in range(1,HEIGHT-1):
-                if i == 1:
+                ##save neighbor
+                if j ==1 and 1<= i <= MIDDLE-2:
                     self.neigh_bound.append((i,j))
-                elif i == MIDDLE-1:
-                    self.passage_to_right.append((i,j))
-                elif j == 1:
+                if j ==1 and MIDDLE+2<=i<=WIDTH - 2:
                     self.neigh_bound.append((i,j))
-                elif j == HEIGHT-1:
+                if j ==HEIGHT - 1 and 1<= i <= MIDDLE-2:
                     self.neigh_bound.append((i,j))
+                if j ==HEIGHT - 1 and MIDDLE+2<=i<=WIDTH - 2:
+                    self.neigh_bound.append((i,j))
+                if i == 1 and 2<= j<= MIDDLE-3:
+                    self.neigh_bound.append((i, j))
+                if i == HEIGHT - 2 and 2<= j<= MIDDLE-3:
+                    self.neigh_bound.append((i, j))
 
-        # right chamber
-        for i in range(MIDDLE+1,WIDTH):
-            for j in range(1,HEIGHT-1):
-                if i == WIDTH:
-                    self.neigh_bound.append((i,j))
-                elif i == MIDDLE+1:
-                    self.passage_to_left.append((i,j))
-                elif j == 1:
-                    self.neigh_bound.append((i,j))
-                elif j == HEIGHT-1:
-                    self.neigh_bound.append((i,j))
+                ## we let the columns next to th middle become the entrance to next chamber
+                if i == MIDDLE-1 and 0<j<WIDTH-1:
+                    self.passage_to_left.append((i, j))
+                if i == MIDDLE + 1 and 0 < j < WIDTH - 1:
+                    self.passage_to_right.append((i, j))
+
+
+
 
         # Make a Fence boundary
         b = 0
@@ -89,12 +88,13 @@ class Anthill(Model):
             self.grid.place_agent(br,(h[0],h[1]))
             b += 1
 
+
+
     def step(self):
         '''Advance the model by one step.'''
 
         # Add new ants into the internal area ont he boundary
         for xy in self.neigh_bound:
-
             # Add with probability internal rate and if the cell is empty
             if self.random.uniform(0, 1) < self.internalrate and self.grid.is_cell_empty(xy) == True:
 

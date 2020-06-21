@@ -15,45 +15,43 @@ HEIGHT = 25
 MIDDLE = int(WIDTH/2)
 bound_vals=[]
 neigh_bound=[]
+middle=[]
 passage_to_right=[]
 passage_to_left=[]
 
 for i in range(WIDTH):
     for j in range(HEIGHT):
-        if i == 0 or i == WIDTH - 1 or i == MIDDLE - 1 or i == MIDDLE + 1:
-            bound_vals.append((i,j))
-        elif j == 0 and i != MIDDLE:
-            bound_vals.append((i,j))
-        elif j == HEIGHT - 1 and i != MIDDLE:
-            bound_vals.append((i,j))
+        ##make boundary
+        if i == 0 or j == 0 or i == WIDTH - 1 or j == HEIGHT - 1:
+            bound_vals.append((i, j))
+        if i == MIDDLE and 0 < j < WIDTH - 1:
+            bound_vals.append((i, j))
+            middle.append((i, j))
 
-# left chamber
-for i in range(1,MIDDLE-1):
-    for j in range(1,HEIGHT-1):
-        if i == 1:
-            neigh_bound.append((i,j))
-        elif i == MIDDLE-1:
-            passage_to_right.append((i,j))
-        elif j == 1:
-            neigh_bound.append((i,j))
-        elif j == HEIGHT-1:
-            neigh_bound.append((i,j))
+        ##save neighbor
+        if j == 1 and 1 <= i <= MIDDLE - 2:
+            neigh_bound.append((i, j))
+        if j == 1 and MIDDLE + 2 <= i <= WIDTH - 2:
+            neigh_bound.append((i, j))
+        if j == HEIGHT - 1 and 1 <= i <= MIDDLE - 2:
+            neigh_bound.append((i, j))
+        if j == HEIGHT - 1 and MIDDLE + 2 <= i <= WIDTH - 2:
+            neigh_bound.append((i, j))
+        if i == 1 and 2 <= j <= MIDDLE - 3:
+            neigh_bound.append((i, j))
+        if i == HEIGHT - 2 and 2 <= j <= MIDDLE - 3:
+            neigh_bound.append((i, j))
 
-# right chamber
-for i in range(MIDDLE+1,WIDTH):
-    for j in range(1,HEIGHT-1):
-        if i == WIDTH:
-            neigh_bound.append((i,j))
-        elif i == MIDDLE+1:
-            passage_to_left.append((i,j))
-        elif j == 1:
-            neigh_bound.append((i,j))
-        elif j == HEIGHT-1:
-            neigh_bound.append((i,j))
+        ## we let the columns next to th middle become the entrance to next chamber
+        if i == MIDDLE - 1 and 0 < j < WIDTH - 1:
+            passage_to_left.append((i, j))
+        if i == MIDDLE + 1 and 0 < j < WIDTH - 1:
+            passage_to_right.append((i, j))
 
 class Ant(Agent):
     def __init__(self, id, model):
         super().__init__(id, model)
+        self.internalrate=0.2
 
 
     def force_calc(self):
@@ -132,31 +130,35 @@ class Ant(Agent):
 
             new_position = (self.pos[0] + c[0], self.pos[1] + c[1])
 
-            # ant if it has moved onto the boundary and it will be removed
-            if new_position in neigh_bound:
-                self.model.grid.remove_agent(self)
-                self.model.schedule.remove(self)
+            if self.model.grid.is_cell_empty(new_position):
+                # ant if it has moved onto the boundary and it will be removed
+                if new_position in neigh_bound:
+                    self.model.grid.remove_agent(self)
+                    self.model.schedule.remove(self)
 
-            # move to right chamber
-            elif new_position in passage_to_right:
-                pos = random.choice(passage_to_left)
-                new_pos = (pos[0]+1,y)
-                self.model.grid.move_agent(self, new_pos)
+                # move to right chamber
+                elif new_position in passage_to_right:
+                    pos = random.choice(passage_to_left)
+                    if self.random.uniform(0, 1) < self.internalrate:
+                        if self.model.grid.is_cell_empty(pos):
+                            self.model.grid.move_agent(self, pos)
 
             # move to left chamber
-            elif new_position in passage_to_left:
-                pos = random.choice(passage_to_right)
-                new_pos = (pos[0]+1,y)
-                self.model.grid.move_agent(self, new_pos)
+                elif new_position in passage_to_left:
+                    pos = random.choice(passage_to_right)
+                    if self.random.uniform(0, 1) < self.internalrate:
+                        if self.model.grid.is_cell_empty(pos):
+                            self.model.grid.move_agent(self, pos)
 
             ## if it is empty then move into this place
-            elif self.model.grid.is_cell_empty(new_position):
-                self.model.grid.move_agent(self, new_position)
+                else:
+                    self.model.grid.move_agent(self, new_position)
 
             # Remove if new pos is already occupied but current pos is on boundary
-            elif self.pos in neigh_bound:
-                self.model.grid.remove_agent(self)
-                self.model.schedule.remove(self)
+            else:
+                if self.pos in neigh_bound:
+                    self.model.grid.remove_agent(self)
+                    self.model.schedule.remove(self)
 
         # Remove if F=0 and cur pos is on the boundary
         elif self.pos in neigh_bound:
